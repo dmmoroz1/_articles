@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Articles</title>
+
+    <link rel="stylesheet" href="css/materialize.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <div class="wrapper">
+            <Slider :slides="slides"></Slider>
+            <Articles :articles="articles"></Articles>
+        </div>
+    </div>
+    
+    <script src="js/materialize.min.js"></script>
+    <script src="js/vue.min.js"></script>
+
+    <script type="text/x-template" id="slider-template">
+        <div class="slider">
+            <div class="slider__arrow" @click="carousel.prev()">
+                <i class="chevron chevron_left"></i>
+            </div>
+            <div class="slider__body">
+                <div class="carousel" ref="carousel">
+                    <div class="carousel-item" v-for="item in slides" :key="item">
+                        <img :src="`http://placeimg.com/200/200/${ item }`">
+                    </div>
+                </div>
+            </div>
+            <div class="slider__arrow" @click="carousel.next()">
+                <i class="chevron chevron_right"></i>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/x-template" id="articles-template">
+        <div class="articles">
+            <div class="articles__actions actions">
+                <div class="actions__items">
+                    <div class="actions__item actions__item_w">
+                        <input placeholder="Search" type="text" v-model="search">
+                    </div>
+                    <div class="actions__item">
+                        <select v-model="order">
+                            <option value="date">Order by date</option>
+                            <option value="title">Order by title</option>
+                        </select>
+                    </div>
+                    <div class="actions__item">
+                        <select v-model="category">
+                            <option value="" selected>Filter by category</option>
+                            <option :value="item" v-for="item in categories">{{ item }}</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <ul class="articles__collection collection">
+                <li class="collection-item article" v-for="article in articleList" :key="article.id">
+                    <div class="article__image">
+                        <img :src="`http://placeimg.com/400/200/${ article.category }/${ article.id }`" :alt="article.title">
+                    </div>
+                    <div class="article__body">
+                        <div class="article__title">{{ article.title }}</div>
+                        <div class="article__date">{{ article.date.toLocaleDateString() }}</div>
+                        <div class="article__text">{{ article.text }}</div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </script>
+
+    <script>
+        Vue.component('Slider', {
+            template: '#slider-template',
+            props: {
+                slides: [],
+            },
+            data() {
+                return {
+                    carousel: null,
+                }
+            },
+            mounted() {
+                this.carousel = M.Carousel.init(this.$refs.carousel, {
+                    fullWidth: true,
+                    padding: 5,
+                })
+            },
+            destroyed() {
+                if ( this.carousel && this.carousel.destroy ) {
+                    this.carousel.destroy()
+                }
+            }
+        })
+ 
+        Vue.component('Articles', {
+            template: '#articles-template',
+            props: {
+                articles: [],
+            },
+            data() {
+                return {
+                    search: '',
+                    order: 'date',
+                    category: '',
+
+                    instances: [],
+                }
+            },
+            methods: {
+                sortBy(a, b) {
+                    if ( this.order === 'date' ) {
+                        return b.date - a.date
+                    }
+                    if ( a.title < b.title ) {
+                        return -1
+                    }
+                    if ( a.title > b.title ) {
+                        return 1
+                    }
+                    return 0
+                }
+            },
+            computed: {
+                categories() {
+                    return this.articles.map(item => item.category).filter((item, idx, self) => {
+                        return self.indexOf(item) === idx
+                    })
+                },
+                articleList() {
+                    let res = this.articles
+
+                    if ( this.search ) {
+                        res = res.filter(article => {
+                            return article.text.indexOf(this.search) !== -1
+                        })
+                    }
+
+                    if ( this.category ) {
+                        res = res.filter(article => {
+                            return article.category == this.category
+                        })
+                    }
+
+                    return res.sort(this.sortBy)
+                },
+            },
+            mounted() {
+                const elems = document.querySelectorAll('select')
+                this.instances = M.FormSelect.init(elems, {})
+            },
+            destroyed() {
+                this.instances.forEach(instance => {
+                    if ( instance && instance.destroy ) {
+                        instance.destroy()
+                    }
+                })
+            },
+        })
+
+        var vm = new Vue({
+            el: "#app",
+            data: {
+                slides: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                articles: [
+                    { id: 0, title: 'Article5', date: new Date(2021, 01, 21), category: 'tech', text: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Repellendus omnis quo iure dolorum corporis, voluptate mollitia nostrum, est sunt inventore nulla eveniet accusantium minus, cupiditate tempore voluptatibus illum adipisci explicabo!' },
+                    { id: 1, title: 'Article3', date: new Date(2021, 01, 20), category: 'nature', text: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Maxime reiciendis aspernatur repudiandae necessitatibus sunt vero, quis facere, cum totam incidunt deleniti praesentium minima non distinctio, dolorum commodi consectetur sint dolores? A, cumque tempora perspiciatis itaque ut voluptates laudantium obcaecati cupiditate, natus molestiae, saepe eaque veritatis ratione ex sit dignissimos sequi deserunt. Inventore fugit laudantium fugiat at reiciendis sed non minus.' },
+                    { id: 2, title: 'Article4', date: new Date(2021, 01, 20), category: 'tech', text: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Accusamus ducimus numquam earum voluptates cumque eius dignissimos voluptatibus, quia nisi dolore ipsum consequuntur molestias ab repudiandae eveniet perferendis recusandae distinctio ex.' },
+                    { id: 3, title: 'Article1', date: new Date(2021, 01, 19), category: 'nature', text: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorum voluptates nobis quia enim dolore in, voluptatibus obcaecati unde facere similique delectus accusantium hic assumenda voluptate architecto tenetur, ipsum, veniam consequuntur!' },
+                    { id: 4, title: 'Article2', date: new Date(2021, 01, 19), category: 'people', text: 'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quo commodi iure neque earum hic libero, officia tenetur in modi! Soluta, fuga hic quas architecto illo quia ipsum vitae laborum obcaecati!' },
+                ],
+            },
+        })
+    </script>
+</body>
+</html>
